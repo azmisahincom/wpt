@@ -3,12 +3,20 @@
 import * as module from './export-on-dynamic-import-script.js';
 
 const sourcePromise = new Promise(resolve => {
-  self.onmessage = e => {
-    // DedicatedWorkerGlobalScope doesn't fill in e.source,
-    // so use e.target instead.
-    const source = e.source ? e.source : e.target;
-    resolve(source);
-  };
+  if ('DedicatedWorkerGlobalScope' in self &&
+      self instanceof DedicatedWorkerGlobalScope) {
+    self.onmessage = e => {
+      // DedicatedWorkerGlobalScope doesn't fill in e.source,
+      // so use e.target instead.
+      const source = e.source ? e.source : e.target;
+      resolve(source);
+    };
+  } else if ('SharedWorkerGlobalScope' in self &&
+      self instanceof SharedWorkerGlobalScope) {
+    self.onconnect = e => {
+      resolve(e.ports[0]);
+    };
+  }
 });
 
 export let importedModules = ['export-on-dynamic-import-script.js'];
